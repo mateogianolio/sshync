@@ -1,0 +1,57 @@
+{
+    "passfail": false,
+    "browser": false,
+    "jquery": false,
+    "node": true,
+    "predef": [],
+    "debug": false,
+    "devel": false,
+    "es5": true,
+    "strict": true,
+    "globalstrict": true,
+    "asi": false,
+    "laxbreak": false,
+    "bitwise": false,
+    "boss": false,
+    "curly": true,
+    "eqeqeq": true,
+    "eqnull": false,
+    "evil": false,
+    "expr": false,
+    "forin": false,
+    "immed": false,
+    "latedef": false,
+    "loopfunc": false,
+    "noarg": true,
+    "regexp": false,
+    "regexdash": false,
+    "shadow": false,
+    "supernew": false,
+    "undef": false,
+    "validthis": false,
+    "smarttabs": false,
+    "proto": false,
+    "onecase": false,
+    "nonstandard": false,
+    "multistr": false,
+    "laxcomma": false,
+    "lastsemic": false,
+    "iterator": false,
+    "newcap": true,
+    "noempty": true,
+    "nonew": false,
+    "nomen": true,
+    "onevar": true,
+    "plusplus": false,
+    "trailing": true,
+    "white": false,
+    "indent": 4,
+    "predef": [
+        "describe",         // Used by mocha
+        "it",               // Used by mocha
+        "before",           // Used by mocha
+        "beforeEach",           // Used by mocha
+        "after",            // Used by mocha
+        "afterEach"         // Used by mocha
+    ]
+}
