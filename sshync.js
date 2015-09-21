@@ -56,6 +56,21 @@
     });
   }
 
+  function putFile(client, event, src, dest) {
+    client.putFile(src, dest, (error, stdout, stderr) => {
+      if (error)
+        throw error;
+
+      console.log(
+        (event === 'add' ? '[+]'.green : '[/]'.yellow),
+        src.blue,
+        '=>',
+        dest.green,
+        '[' + fs.statSync(src).size + ' bytes]'
+      );
+    });
+  }
+
   function watch(client) {
     return (event, file) => {
       var src = source;
@@ -68,21 +83,12 @@
         client.mkdir(dest, (error, stdout, stderr) => {
           if (error)
             throw error;
+
+          console.log('created directory', dest.green);
+          putFile(client, event, src, dest);
         });
-      }
-
-      client.putFile(src, dest, (error, stdout, stderr) => {
-        if (error)
-          throw error;
-
-        console.log(
-          (event === 'add' ? '[+]'.green : '[/]'.yellow),
-          src.blue,
-          '=>',
-          dest.green,
-          '[' + fs.statSync(src).size + ' bytes]'
-        );
-      });
+      } else
+        putFile(client, event, src, dest);
     };
   }
 
@@ -92,19 +98,13 @@
 
     results.forEach((result) => {
       var p = path.relative(source, result);
-      client.mkdir(destination, (error, stdout, stderr) => {
-        if (error)
-          throw error;
-
-        watch(client)('add', p);
-      });
+      watch(client)('add', p);
     });
   }
 
   var client = ssh(host_user, host_ip, () => {
     console.log(host_user.bold + '@'.blue + host_ip);
-    console.log('source:\t\t', source.blue);
-    console.log('destination:\t', destination.green, '\n');
+    console.log(source.blue, '=>', destination.green, '\n');
 
     if (fs.lstatSync(source).isDirectory())
       walk(source, walker);
