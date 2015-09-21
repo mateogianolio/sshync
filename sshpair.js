@@ -24,7 +24,7 @@
   var host_ip = host.pop(),
       host_user = host.pop();
 
-  cp.exec('echo "y\n" | ssh-keygen -q -N "" -f ~/.ssh/id_rsa', () => {});
+  cp.exec('echo -e "y\n" | ssh-keygen -q -N "" -f ~/.ssh/id_rsa', () => {});
   console.log('generated ssh key to', '~/.ssh/id_rsa.pub'.blue);
 
   var client = ssh(host_user, host_ip, () => {
