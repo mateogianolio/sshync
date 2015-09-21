@@ -5,7 +5,7 @@ Auto-sync files or directories over SSH using [fs.**watch**()](https://nodejs.or
 Comes with a nifty tool ```sshpair``` that generates a public SSH key with
 
 ```bash
-echo "y\n" | ssh-keygen -q -N "" -f ~/.ssh/id_rsa
+echo -e "y\n" | ssh-keygen -q -N "" -f ~/.ssh/id_rsa
 ```
 
 and writes the result to ```~/.ssh/authorized_keys``` on the remote host. This prevents the password prompt from showing up every time we sync.
@@ -43,7 +43,7 @@ root@xxx.xxx.82.203's password:
 root@xxx.xxx.82.203's password:
 ~/.ssh/id_rsa.pub => ~/.ssh/authorized_keys
 
-$ echo ".git\nnode_modules" > .sshyncignore
+$ echo -e ".git\nnode_modules" > .sshyncignore
 $ sshync root@xxx.xxx.82.203 . /root/sshync
 . => root@xxx.xxx.82.203:/root/sshync
 
