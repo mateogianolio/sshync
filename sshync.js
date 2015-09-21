@@ -10,7 +10,8 @@
       ssh = require('ssh-client'),
       host = process.argv[2],
       source = process.argv[3],
-      destination = process.argv[4];
+      destination = process.argv[4],
+      dirList = [];
 
   function help() {
     var pkg = require('./package');
@@ -28,6 +29,17 @@
   host = host.split('@');
   var host_ip = host.pop(),
       host_user = host.pop();
+
+  var ignore = source + '/.sshyncignore',
+      ignoreList = [];
+
+  if (fs.existsSync(ignore)) {
+    ignoreList = fs
+      .readFileSync(ignore, 'utf8')
+      .split('\n')
+      .filter((str) => { return str !== ''; })
+      .map((str) => { return destination + '/' + str; });
+  }
 
   function walk(dir, done) {
     var results = [];
@@ -56,39 +68,38 @@
     });
   }
 
-  function putFile(client, event, src, dest) {
-    client.putFile(src, dest, (error, stdout, stderr) => {
-      if (error)
-        throw error;
-
-      console.log(
-        (event === 'add' ? '[+]'.green : '[/]'.yellow),
-        src.blue,
-        '=>',
-        dest.green,
-        '[' + fs.statSync(src).size + ' bytes]'
-      );
-    });
-  }
-
   function watch(client) {
-    return (event, file) => {
-      var src = source;
-      var dest = destination;
+    return function(event, file) {
+      var src = source + '/' + file,
+          dest = destination + '/' + file,
+          dir = dest.split('/').slice(0, -1).join('/');
 
-      if (fs.lstatSync(source).isDirectory()) {
-        src = src + '/' + file;
-        dest = dest + '/' + file;
+      for (var i = 0; i < ignoreList.length; i++)
+        if (ignoreList[i] === dest.substring(0, ignoreList[i].length))
+          return;
 
-        client.mkdir(dest, (error, stdout, stderr) => {
+      client.mkdir(dir, function(error, stdout, stderr) {
+        if (error)
+          throw error;
+
+        if (dirList.indexOf(dir) === -1) {
+          console.log('mkdir -p', dir.green);
+          dirList.push(dir);
+        }
+
+        client.putFile(src, dest, function(error, stdout, stderr) {
           if (error)
             throw error;
 
-          console.log('created directory', dest.green);
-          putFile(client, event, src, dest);
+          console.log(
+            (event === 'add' ? '[+]'.green : '[/]'.yellow),
+            src.blue,
+            '=>',
+            dest.green,
+            '[' + fs.statSync(src).size + ' bytes]'
+          );
         });
-      } else
-        putFile(client, event, src, dest);
+      });
     };
   }
 
@@ -96,15 +107,17 @@
     if (error)
       throw error;
 
-    results.forEach((result) => {
+    results.forEach(function(result) {
       var p = path.relative(source, result);
       watch(client)('add', p);
     });
   }
 
-  var client = ssh(host_user, host_ip, () => {
-    console.log(host_user.bold + '@'.blue + host_ip);
-    console.log(source.blue, '=>', destination.green, '\n');
+  var client = ssh(host_user, host_ip, function() {
+    console.log(source.blue, '=>', host_user.bold + '@'.blue + host_ip + ':' + destination.green, '\n');
+
+    if (ignoreList.length)
+      console.log('ignore', ignore.red);
 
     if (fs.lstatSync(source).isDirectory())
       walk(source, walker);
