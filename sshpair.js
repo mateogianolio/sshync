@@ -24,19 +24,19 @@
   var host_ip = host.pop(),
       host_user = host.pop();
 
-  cp.exec('echo -e "y\n" | ssh-keygen -q -N "" -f ~/.ssh/id_rsa', () => {});
-  console.log('generated ssh key to', '~/.ssh/id_rsa.pub'.blue);
+  cp.exec('echo -e "y\n" | ssh-keygen -q -N "" -f ~/.ssh/sshync', () => {});
+  console.log('generated ssh key to', '~/.ssh/sshync.pub'.blue);
 
   var client = ssh(host_user, host_ip, () => {
     client.exec('mkdir -p ~/.ssh', (error, stdout, stderr) => {
       if (error)
         throw error;
 
-      client.putFile('~/.ssh/id_rsa.pub', '~/.ssh/authorized_keys', (error, stdout, stderr) => {
+      client.putFile('~/.ssh/sshync.pub', '~/.ssh/authorized_keys', (error, stdout, stderr) => {
         if (error)
           throw error;
 
-        console.log('~/.ssh/id_rsa.pub'.blue, '=>', '~/.ssh/authorized_keys'.green);
+        console.log('~/.ssh/sshync.pub'.blue, '=>', '~/.ssh/authorized_keys'.green);
         process.exit();
       });
     });
