@@ -151,7 +151,7 @@
     var c = [
       'scp',
       '"' + localPath + '"',
-      '"' + this.username + '@' + this.host + ':' + remotePath.replace(' ', '\\ ') + '"'
+      '"' + this.username + '@' + this.host + ':' + remotePath.replace(/ /g, '\\ ') + '"'
     ];
 
     exec(c.join(' '), function(error, stdout, stderr) {
