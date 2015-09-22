@@ -7,7 +7,7 @@
 
   var fs = require('fs'),
       path = require('path'),
-      ssh = require('ssh-client'),
+      ssh = require('./ssh.js'),
       host = process.argv[2],
       source = process.argv[3],
       destination = process.argv[4],
@@ -37,8 +37,8 @@
     ignoreList = fs
       .readFileSync(ignore, 'utf8')
       .split('\n')
-      .filter((str) => { return str !== ''; })
-      .map((str) => { return destination + '/' + str; });
+      .filter(function(str) { return str !== ''; })
+      .map(function(str) { return destination + '/' + str; });
   }
 
   function walk(dir, done) {
@@ -70,9 +70,16 @@
 
   function watch(client) {
     return function(event, file) {
-      var src = source + '/' + file,
-          dest = destination + '/' + file,
-          dir = dest.split('/').slice(0, -1).join('/');
+      file = file !== undefined ? file : '';
+
+      var src = source.indexOf(file) === -1 ? source + '/' + file : source,
+          dest = source.indexOf(file) === -1 ? destination + '/' + file : destination,
+          dir = dest.split('/');
+
+      if(dir.length > 1)
+        dir = dir.slice(0, -1);
+
+      dir = dir.join('/');
 
       for (var i = 0; i < ignoreList.length; i++)
         if (ignoreList[i] === dest.substring(0, ignoreList[i].length))

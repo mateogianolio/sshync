@@ -1,6 +1,6 @@
 {
   "name": "sshync",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "auto-sync files over ssh",
   "main": "sshync.js",
   "bin": {
@@ -8,7 +8,6 @@
     "sshpair": "sshpair.js"
   },
   "dependencies": {
-    "ssh-client": "0.0.1",
     "terminal-colors": "^0.1.4"
   },
   "devDependencies": {},

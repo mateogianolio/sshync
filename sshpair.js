@@ -6,7 +6,7 @@
   require('terminal-colors');
 
   var cp = require('child_process'),
-      ssh = require('ssh-client'),
+      ssh = require('./ssh.js'),
       host = process.argv[2];
 
   function help() {
