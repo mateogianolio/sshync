@@ -94,9 +94,17 @@
           dirList.push(dir);
         }
 
+        if (fs.lstatSync(src).isDirectory()) {
+          walk(src, walker);
+          return;
+        }
+
         client.putFile(src, dest, function(error, stdout, stderr) {
-          if (error)
-            throw error;
+          if (error) {
+            console.log('[!]'.red + ' failed to put ' + src);
+            console.log(stderr.red);
+            return;
+          }
 
           console.log(
             (event === 'add' ? '[+]'.green : '[/]'.yellow),

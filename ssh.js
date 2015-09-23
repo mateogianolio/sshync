@@ -126,32 +126,19 @@
     this.ssh.kill('SIGHUP');
   };
 
-  SSHClient.prototype.cd = function(dir, cb) {
-    this.exec("cd " + dir, cb);
-  };
-
   SSHClient.prototype.mkdir = function(dir, cb) {
     this.exec("mkdir -p " + dir, cb);
-  };
-
-  SSHClient.prototype.put = function(contents, remotePath, cb) {
-    var tmpPath = 'file.' + (Math.random() * 100),
-        self = this;
-
-    fs.writeFile(tmpPath, contents, 'utf-8', function(err) {
-      self.putFile(tmpPath, remotePath, function(err, stdout, stderr) {
-        fs.unlink(tmpPath, function(){
-          cb(err, stdout, stderr);
-        });
-      });
-    });
   };
 
   SSHClient.prototype.putFile = function(localPath, remotePath, cb) {
     var c = [
       'scp',
       '"' + localPath + '"',
-      '"' + this.username + '@' + this.host + ':' + remotePath.replace(/ /g, '\\ ') + '"'
+      '"' +
+        this.username + '@' +
+        this.host + ':' +
+        remotePath.replace(/ /g, '\\ ') +
+      '"'
     ];
 
     exec(c.join(' '), function(error, stdout, stderr) {
