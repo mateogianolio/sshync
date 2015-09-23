@@ -94,6 +94,9 @@
           dirList.push(dir);
         }
 
+        if (fs.lstatSync(src).isDirectory())
+          return;
+
         client.putFile(src, dest, function(error, stdout, stderr) {
           if (error)
             throw error;
