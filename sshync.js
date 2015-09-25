@@ -72,18 +72,14 @@
     return function(event, file) {
       file = file !== undefined ? file : '';
 
-      var src = source.indexOf(file) === -1 ? source + '/' + file : source,
-          dest = source.indexOf(file) === -1 ? destination + '/' + file : destination,
+			var src = file,
+					dest = destination + '/' + file,
           dir = dest.split('/');
 
       if(dir.length > 1)
         dir = dir.slice(0, -1);
 
       dir = dir.join('/');
-
-      for (var i = 0; i < ignoreList.length; i++)
-        if (ignoreList[i] === dest.substring(0, ignoreList[i].length))
-          return;
 
       client.mkdir(dir, function(error, stdout, stderr) {
         if (error)
@@ -124,6 +120,11 @@
 
     results.forEach(function(result) {
       var p = path.relative(source, result);
+			console.log(p);
+			for (var i = 0; i < ignoreList.length; i++)
+        if (ignoreList[i] === p.substring(0, ignoreList[i].length))
+          return;
+
       watch(client)('add', p);
     });
   }
