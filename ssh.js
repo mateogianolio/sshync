@@ -126,6 +126,10 @@
     this.ssh.kill('SIGHUP');
   };
 
+	SSHClient.prototype.cd = function(dir, cb) {
+		this.exec("cd " + dir, cb);
+	};
+
   SSHClient.prototype.mkdir = function(dir, cb) {
     this.exec("mkdir -p " + dir, cb);
   };
