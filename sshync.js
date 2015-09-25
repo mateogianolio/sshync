@@ -37,8 +37,14 @@
     ignoreList = fs
       .readFileSync(ignore, 'utf8')
       .split('\n')
-      .filter(function(str) { return str !== ''; })
-      .map(function(str) { return destination + '/' + str; });
+      .filter(function(str) {
+				return str !== '';
+			})
+			.map(function(str) {
+				if (fs.lstatSync(str).isDirectory())
+					return str + '/';
+				return str;
+			});
   }
 
   function walk(dir, done) {
@@ -68,53 +74,48 @@
     });
   }
 
+	function put(event, file, remoteFile) {
+		client.putFile(file, remoteFile, function(error, stdout, stderr) {
+			if (error) {
+				console.log('[!]'.red + ' failed to put ' + file);
+				console.log(stderr.red);
+				return;
+			}
+
+			console.log(
+				(event === 'add' ? '[+]'.green : '[/]'.yellow),
+				file.blue,
+				'=>',
+				remoteFile.green,
+				'[' + fs.statSync(file).size + ' bytes]'
+			);
+		});
+	}
+
   function watch(client) {
     return function(event, file) {
       file = file !== undefined ? file : '';
+			var remoteFile = destination + '/' + file,
+					remotedir = remoteFile.split('/');
 
-      var src = source.indexOf(file) === -1 ? source + '/' + file : source,
-          dest = source.indexOf(file) === -1 ? destination + '/' + file : destination,
-          dir = dest.split('/');
+      if(remotedir.length > 1)
+        remotedir = remotedir.slice(0, -1);
 
-      if(dir.length > 1)
-        dir = dir.slice(0, -1);
+			for (var i = 0; i < ignoreList.length; i++)
+				if (ignoreList[i] === file.substring(0, ignoreList[i].length))
+					return;
 
-      dir = dir.join('/');
+      remotedir = remotedir.join('/');
+			client.cd(remotedir, function(error) {
+				if (error) {
+					client.mkdir(remotedir, function(error) {
+						put(file, remoteFile);
+					});
+					return;
+				}
 
-      for (var i = 0; i < ignoreList.length; i++)
-        if (ignoreList[i] === dest.substring(0, ignoreList[i].length))
-          return;
-
-      client.mkdir(dir, function(error, stdout, stderr) {
-        if (error)
-          throw error;
-
-        if (dirList.indexOf(dir) === -1) {
-          console.log('mkdir -p', dir.green);
-          dirList.push(dir);
-        }
-
-        if (fs.lstatSync(src).isDirectory()) {
-          walk(src, walker);
-          return;
-        }
-
-        client.putFile(src, dest, function(error, stdout, stderr) {
-          if (error) {
-            console.log('[!]'.red + ' failed to put ' + src);
-            console.log(stderr.red);
-            return;
-          }
-
-          console.log(
-            (event === 'add' ? '[+]'.green : '[/]'.yellow),
-            src.blue,
-            '=>',
-            dest.green,
-            '[' + fs.statSync(src).size + ' bytes]'
-          );
-        });
-      });
+				put(event, file, remoteFile);
+			});
     };
   }
 
@@ -137,7 +138,7 @@
     if (fs.lstatSync(source).isDirectory())
       walk(source, walker);
     else
-      watch(client)('add');
+      watch(client)('add', source);
 
     fs.watch(source, watch(client));
   });

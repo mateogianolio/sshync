@@ -1,6 +1,6 @@
 {
   "name": "sshync",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "auto-sync files over ssh",
   "main": "sshync.js",
   "bin": {
