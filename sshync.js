@@ -17,7 +17,7 @@
     var pkg = require('./package');
     console.log('# sshync', pkg.version);
     console.log('# by', pkg.author, '\n');
-    console.log('sshync <user@host[:port]> ' + '<source>'.blue + ' ' + '<destination>'.green);
+    console.log('sshync <user@host[:port]>', '<source>'.blue, '<destination>'.green);
     console.log('\t' + 'source'.blue + ':\t\tlocal source folder.');
     console.log('\t' + 'destination'.green + ':\tremote destination folder.');
     process.exit();
