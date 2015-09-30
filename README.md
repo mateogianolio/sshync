@@ -1,58 +1,52 @@
 # sshync
 
-Auto-sync files or directories over SSH using [fs.**watch**()](https://nodejs.org/docs/latest/api/fs.html#fs_fs_watch_filename_options_listener).
+Auto-sync files or directories over SSH using [fs.**watch**()](https://nodejs.org/docs/latest/api/fs.html#fs_fs_watch_filename_options_listener). Generates SSH private/public keys with ```ssh-keygen``` and transfers the public one to ```~/.ssh/authorized_keys``` on remote host, to avoid having to re-type password all the time.
 
-Comes with a nifty tool ```sshpair``` that generates a public SSH key with
+Utilizes simple caching to avoid unnecessary file transfers and to continuously show size difference.
 
-```bash
-echo -e "y\n" | ssh-keygen -q -N "" -f ~/.ssh/sshync
-```
+Ignore paths by adding them, one per line, to a file named  ```.sshyncignore``` in the root ```source``` folder.
 
-and writes the result to ```~/.ssh/authorized_keys``` on the remote host. This prevents the password prompt from showing up every time we sync.
-
-Ignore paths by adding them, one per line, to a file named  ```.sshyncignore``` in the provided ```source``` folder.
-
-### install
+### Install
 
 ```bash
 $ npm install sshync -g
 ```
 
-### usage
+### Usage
 
 ```bash
-# generate a public SSH key (so we don't have to retype password)
-# write to user@ip:~/.ssh/authorized_keys
-
-$ sshpair <user@ip[:port]>
-
-# initialize file auto-sync
+# initialize sshync
+# (you might have to type password to transfer public key to remote host)
 $ sshync <user@ip[:port]> <source> <destination>
           source:       local source folder.
           destination:  remote destination folder.
 ```
 
-### example
+### Example
+
+First time run output:
 
 ```bash
-$ git clone https://github.com/mateogianolio/sshync.git
-$ cd sshync
-$ sshpair root@xxx.xxx.82.203
-generated ssh key to ~/.ssh/sshync.pub
+$ sshync root@xxx.xxx.82.203 sshync.js /root/sshync/sshync.js
+transferring public key to ~/.ssh/authorized_keys, please enter remote password:
 root@xxx.xxx.82.203's password:
-root@xxx.xxx.82.203's password:
-~/.ssh/sshync.pub => ~/.ssh/authorized_keys
+/Users/username/.ssh/sshync.pub => ~/.ssh/authorized_keys 0.4kB (+406)
+connected to root@xxx.xxx.82.203
+syncing sshync.js to /root/sshync/sshync.js
+sshync.js => /root/sshync/sshync.js 6.2kB (+6327)
 
-$ echo -e ".git\nnode_modules" > .sshyncignore
-$ sshync root@xxx.xxx.82.203 . /root/sshync
-. => root@xxx.xxx.82.203:/root/sshync
+# ... edit sshync.js ...
+sshync.js => /root/sshync/sshync.js 6.2kB (+1)
+```
 
-ignore ./.sshyncignore
-mkdir -p /root/sshync
-[+] ./README.md => /root/sshync/README.md [399 bytes]
-[+] ./package.json => /root/sshync/package.json [520 bytes]
-[+] ./sshync.js => /root/sshync/sshync.js [3304 bytes]
-[+] ./LICENSE.md => /root/sshync/LICENSE.md [1084 bytes]
-# ... edit package.json ...
-[/] ./package.json => /root/sshync/package.json [524 bytes]
+Second time run output (no password needed):
+
+```bash
+$ sshync root@xxx.xxx.82.203 sshync.js /root/sshync/sshync.js
+connected to root@xxx.xxx.82.203
+syncing sshync.js to /root/sshync/sshync.js
+sshync.js => /root/sshync/sshync.js 6.2kB (+6327)
+
+# ... edit sshync.js ...
+sshync.js => /root/sshync/sshync.js 6.2kB (+1)
 ```
