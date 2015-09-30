@@ -5,15 +5,15 @@
   require('terminal-colors');
 
   var fs = require('fs'),
-			exec = require('child_process').exec,
+      exec = require('child_process').exec,
       path = require('path'),
       info = process.argv[2],
       source = process.argv[3],
       destination = process.argv[4],
-			cache = {},
-			ssh;
+      cache = {},
+      ssh;
 
-	if (!info || !source || !destination || info.indexOf('@') === -1) {
+  if (!info || !source || !destination || info.indexOf('@') === -1) {
     var pkg = require('./package');
     console.log('# sshync', pkg.version);
     console.log('# by', pkg.author, '\n');
@@ -26,13 +26,13 @@
   info = info.split('@');
   var host = info.pop(),
       user = info.pop(),
-			port;
+      port;
 
-	if (host.indexOf(':') !== -1) {
-		host = host.split(':');
-		port = host.pop();
-		host = host.pop();
-	}
+  if (host.indexOf(':') !== -1) {
+    host = host.split(':');
+    port = host.pop();
+    host = host.pop();
+  }
 
   var ignore = source + '/.sshyncignore',
       ignores = [];
@@ -42,20 +42,20 @@
       .readFileSync(ignore, 'utf8')
       .split('\n')
       .filter(function(str) {
-				return str !== '';
-			})
-			.map(function(str) {
-				if (fs.lstatSync(str).isDirectory())
-					return str + '/';
-				return str;
-			});
+        return str !== '';
+      })
+      .map(function(str) {
+        if (fs.lstatSync(str).isDirectory())
+          return str + '/';
+        return str;
+      });
   }
 
-	var privateKeyPath = process.platforn === 'win32' ?
-		process.env.USERPROFILE :
-		process.env.HOME;
+  var privateKeyPath = process.platforn === 'win32' ?
+    process.env.USERPROFILE :
+    process.env.HOME;
 
-	privateKeyPath += '/.ssh/sshync';
+  privateKeyPath += '/.ssh/sshync';
 
   function walk(dir, done) {
     var results = [];
@@ -84,159 +84,159 @@
     });
   }
 
-	function put(event, file, remoteFile, callback) {
-		file = file.replace(/ /g, '\\ ');
-		remoteFile = remoteFile.replace(/ /g, '\\ ');
+  function put(event, file, remoteFile, callback) {
+    file = file.replace(/ /g, '\\ ');
+    remoteFile = remoteFile.replace(/ /g, '\\ ');
 
-		var content = fs.readFileSync(file, 'utf8');
-		if (typeof cache[file] === 'number' || cache[file] === content)
-			return;
+    var content = fs.readFileSync(file, 'utf8');
+    if (typeof cache[file] === 'number' || cache[file] === content)
+      return;
 
-		cache[file] = (cache[file] || []).length;
+    cache[file] = (cache[file] || []).length;
 
-		var command = [ 'scp', '-i', privateKeyPath ];
-		if (port) {
-			command.push('-P');
-			command.push(port);
-		}
-		command.push(file);
-		command.push(user + '@' + host + ':' + remoteFile);
+    var command = [ 'scp', '-i', privateKeyPath ];
+    if (port) {
+      command.push('-P');
+      command.push(port);
+    }
+    command.push(file);
+    command.push(user + '@' + host + ':' + remoteFile);
 
-		exec(command.join(' '), function(file, error) {
-			if (error) {
-				console.log('[' + '!'.red + ']', command.join(' ').bold, 'failed.');
-				if (callback)
-					callback(error);
-				cache[file] = '';
+    exec(command.join(' '), function(file, error) {
+      if (error) {
+        console.log('[' + '!'.red + ']', command.join(' ').bold, 'failed.');
+        if (callback)
+          callback(error);
+        cache[file] = '';
 
-				return;
-			}
+        return;
+      }
 
-			var size = content.length - cache[file];
-			console.log(
-				file.blue,
-				'=>',
-				remoteFile.green,
-				(content.length / 1024).toFixed(1) + 'kB',
-				'(' + (size > 0 ? '+'.green : '-'.red) + Math.abs(size) + ')'
-			);
+      var size = content.length - cache[file];
+      console.log(
+        file.blue,
+        '=>',
+        remoteFile.green,
+        (content.length / 1024).toFixed(1) + 'kB',
+        '(' + (size > 0 ? '+'.green : '-'.red) + Math.abs(size) + ')'
+      );
 
-			cache[file] = content;
+      cache[file] = content;
 
-			if (callback)
-				callback();
-		}.bind(null, file));
-	}
-
-  function watch(event, file) {
-		file = file !== undefined ? file : '';
-		for (var i = 0; i < ignores.length; i++)
-			if (ignores[i] === file.substring(0, ignores[i].length))
-				return;
-
-		var remoteFile = destination + '/' + file,
-				remotedir = destination.split('/');
-
-		if (fs.existsSync(source)) {
-			remoteFile = destination;
-			remotedir.pop();
-		}
-
-		if (file !== source)
-			file = source + '/' + file;
-
-    remotedir = remotedir.join('/');
-		ssh.cd(remotedir, function(event, error, stream) {
-			stream.on('close', function(event, code) {
-				if (code !== 0) {
-					ssh.mkdir(remotedir, function(error) {
-						if (error) {
-							console.log('[' + '!'.red + ']', 'mkdir -p'.bold, remotedir.bold, 'failed');
-							process.exit();
-						}
-
-						console.log('mkdir -p'.bold, remotedir.green);
-						put(event, file, remoteFile);
-					}.bind(null, event));
-					return;
-				}
-
-				put(event, file, remoteFile);
-			}.bind(null, event));
-		}.bind(null, event));
+      if (callback)
+        callback();
+    }.bind(null, file));
   }
 
-	function authenticate(callback) {
-		require('child_process')
-			.exec(
-				'echo -e "y\n" | ssh-keygen -q -N "" -f ~/.ssh/sshync',
-				function() {
-					console.log(
-						'transferring public key to',
-						'~/.ssh/authorized_keys'.green +
-						', please enter ' + 'remote'.bold + ' password:'
-					);
+  function watch(event, file) {
+    file = file !== undefined ? file : '';
+    for (var i = 0; i < ignores.length; i++)
+      if (ignores[i] === file.substring(0, ignores[i].length))
+        return;
 
-					put('add', privateKeyPath + '.pub', '~/.ssh/authorized_keys', callback);
-				}
-			);
-	}
+    var remoteFile = destination + '/' + file,
+        remotedir = destination.split('/');
 
-	function connect() {
-		var options = {
-			host: host,
-			port: port,
-			username: user,
-			privateKey: fs.readFileSync(privateKeyPath)
-		};
+    if (fs.existsSync(source)) {
+      remoteFile = destination;
+      remotedir.pop();
+    }
 
-	  ssh = require('./ssh.js')(options, function(error) {
-			if (error) {
-				if (error.level === 'client-authentication') {
-					if (fs.existsSync(privateKeyPath)) {
-						console.log('[' + '!'.red + ']', 'authentication failed, removing generated keys...');
-						console.log('[' + '!'.red + ']', 'try again!');
-						fs.unlinkSync(privateKeyPath);
-						fs.unlinkSync(privateKeyPath + '.pub');
-					}
+    if (file !== source)
+      file = source + '/' + file;
 
-					return;
-				}
+    remotedir = remotedir.join('/');
+    ssh.cd(remotedir, function(event, error, stream) {
+      stream.on('close', function(event, code) {
+        if (code !== 0) {
+          ssh.mkdir(remotedir, function(error) {
+            if (error) {
+              console.log('[' + '!'.red + ']', 'mkdir -p'.bold, remotedir.bold, 'failed');
+              process.exit();
+            }
 
-				throw error;
-			}
+            console.log('mkdir -p'.bold, remotedir.green);
+            put(event, file, remoteFile);
+          }.bind(null, event));
+          return;
+        }
 
-			console.log('connected to', user + '@' + host);
-	    console.log('syncing', source.blue, 'to', destination.green);
+        put(event, file, remoteFile);
+      }.bind(null, event));
+    }.bind(null, event));
+  }
 
-	    if (ignores.length)
-	      console.log('ignoring ',
-					ignores
-						.map(function(path) {
-							return path.red;
-						})
-						.join(', ')
-				);
+  function authenticate(callback) {
+    require('child_process')
+      .exec(
+        'echo -e "y\n" | ssh-keygen -q -N "" -f ~/.ssh/sshync',
+        function() {
+          console.log(
+            'transferring public key to',
+            '~/.ssh/authorized_keys'.green +
+            ', please enter ' + 'remote'.bold + ' password:'
+          );
 
-			var isDirectory = fs.lstatSync(source).isDirectory();
-	    if (isDirectory)
-	      walk(source, function(error, results) {
-					if (error)
-						throw error;
+          put('add', privateKeyPath + '.pub', '~/.ssh/authorized_keys', callback);
+        }
+      );
+  }
 
-					results.forEach(function(result) {
-						watch('add', path.relative(source, result));
-					});
-				});
-	    else
-	      watch('add', source);
+  function connect() {
+    var options = {
+      host: host,
+      port: port,
+      username: user,
+      privateKey: fs.readFileSync(privateKeyPath)
+    };
 
-	    fs.watch(source, watch);
-	  });
-	}
+    ssh = require('./ssh.js')(options, function(error) {
+      if (error) {
+        if (error.level === 'client-authentication') {
+          if (fs.existsSync(privateKeyPath)) {
+            console.log('[' + '!'.red + ']', 'authentication failed, removing generated keys...');
+            console.log('[' + '!'.red + ']', 'try again!');
+            fs.unlinkSync(privateKeyPath);
+            fs.unlinkSync(privateKeyPath + '.pub');
+          }
 
-	if (!fs.existsSync(privateKeyPath))
-		authenticate(connect);
-	else
-		connect();
+          return;
+        }
+
+        throw error;
+      }
+
+      console.log('connected to', user + '@' + host);
+      console.log('syncing', source.blue, 'to', destination.green);
+
+      if (ignores.length)
+        console.log('ignoring ',
+          ignores
+            .map(function(path) {
+              return path.red;
+            })
+            .join(', ')
+        );
+
+      var isDirectory = fs.lstatSync(source).isDirectory();
+      if (isDirectory)
+        walk(source, function(error, results) {
+          if (error)
+            throw error;
+
+          results.forEach(function(result) {
+            watch('add', path.relative(source, result));
+          });
+        });
+      else
+        watch('add', source);
+
+      fs.watch(source, watch);
+    });
+  }
+
+  if (!fs.existsSync(privateKeyPath))
+    authenticate(connect);
+  else
+    connect();
 }());
