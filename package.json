@@ -1,13 +1,13 @@
 {
   "name": "sshync",
-  "version": "0.1.5",
-  "description": "auto-sync files over ssh",
+  "version": "0.2.0",
+  "description": "Auto-sync files or directories over SSH",
   "main": "sshync.js",
   "bin": {
-    "sshync": "sshync.js",
-    "sshpair": "sshpair.js"
+    "sshync": "sshync.js"
   },
   "dependencies": {
+    "ssh2": "^0.4.11",
     "terminal-colors": "^0.1.4"
   },
   "devDependencies": {},
@@ -18,6 +18,19 @@
     "type": "git",
     "url": "https://github.com/mateogianolio/sshync.git"
   },
+  "keywords": [
+    "ssh",
+    "file sync",
+    "sync",
+    "syncing",
+    "file transfer",
+    "transfer",
+    "remote",
+    "auto-sync",
+    "upload",
+    "file upload",
+    "file watch"
+  ],
   "author": "Mateo Gianolio",
   "license": "MIT"
 }
