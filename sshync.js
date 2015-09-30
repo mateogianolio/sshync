@@ -146,6 +146,9 @@
 
     remotedir = remotedir.join('/');
     ssh.cd(remotedir, function(event, error, stream) {
+      if (error)
+        return;
+
       stream.on('close', function(event, code) {
         if (code !== 0) {
           ssh.mkdir(remotedir, function(error) {
@@ -209,7 +212,7 @@
       console.log('syncing', source.blue, 'to', destination.green);
 
       if (ignores.length)
-        console.log('ignoring ',
+        console.log('ignoring',
           ignores
             .map(function(path) {
               return path.red;
