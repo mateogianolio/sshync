@@ -1,152 +1,72 @@
 (function() {
   'use strict';
 
-  var util = require('util'),
-      ee = require('events').EventEmitter,
-      fs = require('fs'),
-      cp = require('child_process'),
-      spawn = cp.spawn,
-      exec = cp.exec;
+	var fs = require('fs'),
+			self;
 
-  module.exports = function(username, host, connectcb) {
-    return new SSHClient(username, host, connectcb);
-  };
+	function SSH(options, callback) {
+		self = this;
+		self.ready = false;
+		self.callback = callback;
+		self.options = options || {};
+		self.options.host = options.host || 'localhost';
+		self.options.port = options.port || 22;
 
-  function SSHClient(username, host, connectcb){
-    var self = this,
-        outBuff = "",
-        out;
+		if (!options.username || !options.privateKey)
+			return callback(new Error('Missing user or privateKey.'));
 
-    this.username = username;
-    this.host = host;
-    this.ready = false;
-    this.queue = [];
-    this.command = null;
-    this.lastError = null;
-    this.cb = null;
-    this.interval = null;
-    this.working = true;
-    this.connected = false;
-    this.killedSafe = false;
+		self.options.username = options.username;
+		self.options.privateKey = options.privateKey;
 
-    this.ssh = spawn('ssh', ['-t', '-t', username + '@' + host]);
-    this.ssh.stdout.on('data', function (data) {
-      if (self.connected === false) {
-        self.connected = true;
-        self.working = false;
+		self.client = require('ssh2').Client;
+		self.connection = new self.client();
+		self.connection
+			.on('ready', function() {
+				self.ready = true;
+				callback();
+			})
+			.on('error', self.error)
+			.on('end', self.disconnect)
+			.on('close', self.close)
+			.connect(self.options);
+	}
 
-        return self.exec('pwd', function() {
-          self.emit('connect');
-        });
-      }
+	SSH.prototype = {
+		error: function(error) {
+			return self.callback(error);
+		},
 
-      var isEnd = data.toString().indexOf('__SSHCLIENT__\r\n') > -1;
-      outBuff += data.toString();
+		exec: function(command, callback) {
+			self.connection.exec(command, callback);
+		},
 
-      if (self.cb && isEnd) {
-        outBuff = outBuff.split("echo __SSHCLIENT__;\r\n");
-        out = (outBuff[1] && outBuff[1].length > 0) ? outBuff[1] : 'OK: ' + outBuff[0];
-        out = out.replace("\r\n__SSHCLIENT__\r\n", "");
-        self.emit('data', out);
+		mkdir: function(directory, callback) {
+			if (!self.ready)
+				return callback(new Error('Socket not ready.'));
 
-        self.cb(null, out);
+			self.exec('mkdir -p ' + directory, callback);
+		},
 
-        outBuff = "";
-        self.cb = null;
-      }
-      self.working = false;
-    });
+		cd: function(directory, callback) {
+			if (!self.ready)
+				return callback(new Error('Socket not ready.'));
 
-    this.ssh.stderr.on('data', function (data) {
-      // console.log('stderr: ', data.toString());
-      if (data.toString() === "Pseudo-terminal will not be allocated because stdin is not a terminal.\r\n")
-        return;
+			self.exec('cd ' + directory, callback);
+		},
 
-      if (data.toString() === "Killed by signal 1.\r\n")
-        return this.emit('close');
+		disconnect: function() {
+			self.ready = false;
+		},
 
-      if (data.toString().toLowerCase().indexOf('warn') > -1)
-        return;
+		close: function(hadError) {
+			if (hadError)
+				throw new Error('Socket closed with error.');
 
-      if (data.toString().indexOf('No README.md' > -1))
-        return;
-
-      self.lastError = data.toString();
-
-      if (self.cb){
-        self.cb(new Error(data.toString()), null);
-        self.cb = null;
-      }
-
-      self.working = false;
-    });
-
-    this.ssh.on('exit', function (code, signal) {
-      if (code !==0 && self.killedSafe === false) {
-        setTimeout(function() {
-          console.error('Exited', self.lastError);
-          self.emit('error', self.lastError);
-        }, 50);
-      }
-    });
-
-    this.on('connect', function(){
-      self.working = false;
-      connectcb();
-
-      if (self.queue.length === 0)
-        return;
-    });
-
-    this.interval = setInterval(function() {
-      if (self.queue.length > 0 && self.working === false) {
-        var d = self.queue.shift(),
-            s = '';
-        self.cb = d[1];
-        self.working = true;
-        self.emit('sending', d[0]);
-
-        if (d[0].charAt(d[0].length - 1) !== "&")
-          s = ";";
-
-        self.ssh.stdin.write(d[0] + s + " echo __SSHCLIENT__;\n");
-      }
-    }, 100);
-  }
-
-  util.inherits(SSHClient, ee);
-
-  SSHClient.prototype.exec = function(cmd, cb) {
-    this.queue.push([cmd, cb]);
-  };
-
-  SSHClient.prototype.close = function() {
-    clearInterval(this.interval);
-    this.killedSafe = true;
-    this.ssh.kill('SIGHUP');
-  };
-
-	SSHClient.prototype.cd = function(dir, cb) {
-		this.exec("cd " + dir, cb);
+			self.ready = false;
+		}
 	};
 
-  SSHClient.prototype.mkdir = function(dir, cb) {
-    this.exec("mkdir -p " + dir, cb);
-  };
-
-  SSHClient.prototype.putFile = function(localPath, remotePath, cb) {
-    var c = [
-      'scp',
-      '"' + localPath + '"',
-      '"' +
-        this.username + '@' +
-        this.host + ':' +
-        remotePath.replace(/ /g, '\\ ') +
-      '"'
-    ];
-
-    exec(c.join(' '), function(error, stdout, stderr) {
-      cb(error, stdout, stderr);
-    });
-  };
+	module.exports = function(options, callback) {
+		return new SSH(options, callback);
+	};
 }());
