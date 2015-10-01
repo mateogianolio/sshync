@@ -118,7 +118,7 @@
         '=>',
         remoteFile.green,
         (content.length / 1024).toFixed(1) + 'kB',
-        '(' + (size > 0 ? '+'.green : '-'.red) + Math.abs(size) + ')'
+        size !== 0 ? ('(' + (size > 0 ? '+'.green : '-'.red) + Math.abs(size) + ')') : ''
       );
 
       cache[file] = content;
@@ -148,21 +148,13 @@
     }
 
     remotedir = remotedir.join('/');
-    ssh.cd(remotedir, function(error, stream) {
-      stream.on('close', function(code) {
-        if (code !== 0) {
-          ssh.mkdir(remotedir, function(error) {
-            if (error) {
-              console.log('[' + '!'.red + ']', 'mkdir -p'.bold, remotedir.bold, 'failed');
-              return;
-            }
+    ssh.mkdir(remotedir, function(error) {
+      if (error) {
+        console.log('[' + '!'.red + ']', 'mkdir -p'.bold, remotedir.bold, 'failed');
+        return;
+      }
 
-            console.log('mkdir -p'.bold, remotedir.green);
-            put(event, file, remoteFile);
-          });
-        } else
-        put(event, file, remoteFile);
-      });
+      put(event, file, remoteFile);
     });
   }
 

@@ -55,10 +55,6 @@
       self.exec('mkdir -p ' + directory, callback);
     },
 
-    cd: function(directory, callback) {
-      self.exec('cd ' + directory, callback);
-    },
-
     disconnect: function() {
       self.ready = false;
     },
