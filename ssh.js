@@ -37,20 +37,25 @@
     },
 
     exec: function(command, callback) {
-      self.connection.exec(command, callback);
+      if (!self.ready) {
+        setTimeout(function() {
+          self.exec(command, callback);
+        }, 50);
+        return;
+      }
+
+      self.ready = false;
+      self.connection.exec(command, function(error, stream) {
+        self.ready = true;
+        callback(error, stream);
+      });
     },
 
     mkdir: function(directory, callback) {
-      if (!self.ready)
-        return callback(new Error('Socket not ready.'));
-
       self.exec('mkdir -p ' + directory, callback);
     },
 
     cd: function(directory, callback) {
-      if (!self.ready)
-        return callback(new Error('Socket not ready.'));
-
       self.exec('cd ' + directory, callback);
     },
 

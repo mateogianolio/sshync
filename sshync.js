@@ -44,6 +44,7 @@
         return str !== '';
       })
       .map(function(str) {
+        str = source + '/' + str;
         if (fs.lstatSync(str).isDirectory())
           return str + '/';
         return str;
@@ -129,43 +130,40 @@
 
   function watch(event, file) {
     file = file !== undefined ? file : '';
-    for (var i = 0; i < ignores.length; i++)
-      if (ignores[i] === file.substring(0, ignores[i].length))
-        return;
 
     var remoteFile = destination + '/' + file,
-        remotedir = destination.split('/');
-
-    if (fs.existsSync(source)) {
-      remoteFile = destination;
-      remotedir.pop();
-    }
+        remotedir = remoteFile.split('/');
+    remotedir.pop();
 
     if (file !== source)
       file = source + '/' + file;
 
-    remotedir = remotedir.join('/');
-    ssh.cd(remotedir, function(event, error, stream) {
-      if (error)
+    for (var i = 0; i < ignores.length; i++)
+      if (ignores[i] === file.substring(0, ignores[i].length))
         return;
 
-      stream.on('close', function(event, code) {
+    if (!fs.lstatSync(source).isDirectory()) {
+      remoteFile = destination;
+      remotedir.pop();
+    }
+
+    remotedir = remotedir.join('/');
+    ssh.cd(remotedir, function(error, stream) {
+      stream.on('close', function(code) {
         if (code !== 0) {
           ssh.mkdir(remotedir, function(error) {
             if (error) {
               console.log('[' + '!'.red + ']', 'mkdir -p'.bold, remotedir.bold, 'failed');
-              process.exit();
+              return;
             }
 
             console.log('mkdir -p'.bold, remotedir.green);
             put(event, file, remoteFile);
-          }.bind(null, event));
-          return;
-        }
-
+          });
+        } else
         put(event, file, remoteFile);
-      }.bind(null, event));
-    }.bind(null, event));
+      });
+    });
   }
 
   function authenticate(callback) {
