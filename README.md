@@ -56,3 +56,6 @@ sshync.js => /root/sshync/sshync.js 6.2kB (+6327)
 # ... edit sshync.js ...
 sshync.js => /root/sshync/sshync.js 6.2kB (+1)
 ```
+
+If you use this project and would like to see it grow, please consider supporting
+a fellow hacker by donating to ```1JiNbQYiozZZU8J39nbrY9YHSuzkFpivNU```.
