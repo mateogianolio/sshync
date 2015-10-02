@@ -1,12 +1,13 @@
 {
   "name": "sshync",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Auto-sync files or directories over SSH",
   "main": "sshync.js",
   "bin": {
     "sshync": "sshync.js"
   },
   "dependencies": {
+    "readline-sync": "^1.2.21",
     "ssh2": "^0.4.11",
     "terminal-colors": "^0.1.4"
   },

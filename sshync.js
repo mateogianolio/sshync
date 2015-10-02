@@ -5,11 +5,14 @@
   require('terminal-colors');
 
   var fs = require('fs'),
+      rl = require('readline-sync'),
       exec = require('child_process').exec,
+      execSync = require('child_process').execSync,
       path = require('path'),
       info = process.argv[2],
       source = process.argv[3],
       destination = process.argv[4],
+      options = {},
       cache = {},
       ssh;
 
@@ -84,6 +87,20 @@
     });
   }
 
+  function fail(command) {
+    console.log('[' + '!'.red + ']', command.bold, 'failed.');
+  }
+
+  function success(file, remoteFile, size, diff) {
+    console.log(
+      file.blue,
+      '=>',
+      remoteFile.green,
+      (size / 1024).toFixed(1) + 'kB',
+      diff > 0 ? '+'.green + diff : diff < 0 ? '-'.red + Math.abs(diff) : '0'
+    );
+  }
+
   function put(event, file, remoteFile, callback) {
     file = file.replace(/ /g, '\\ ');
     remoteFile = remoteFile.replace(/ /g, '\\ ');
@@ -94,38 +111,48 @@
 
     cache[file] = (cache[file] || []).length;
 
-    var command = [ 'scp', '-i', privateKeyPath ];
+    var command = [ 'scp' ];
+    if (options.privateKey)
+      command.push('-i ' + privateKeyPath);
+
     if (port) {
       command.push('-P');
       command.push(port);
     }
+
     command.push(file);
     command.push(user + '@' + host + ':' + remoteFile);
+    command = command.join(' ');
 
-    exec(command.join(' '), function(file, error) {
-      if (error) {
-        console.log('[' + '!'.red + ']', command.join(' ').bold, 'failed.');
-        if (callback)
-          callback(error);
+    var diff = content.length - cache[file];
+
+    // synchronous file transfer if password-based authentication
+    if (!options.privateKey) {
+      if (execSync(command).length) {
         cache[file] = '';
+        return fail(command);
+      } else {
+        cache[file] = content;
+        return success(file, remoteFile, content.length, diff);
+      }
+    }
 
-        return;
+    // asynchronous file transfer
+    exec(command, function(error) {
+      if (error) {
+        cache[file] = '';
+        if (callback)
+          callback();
+
+        return fail(command);
       }
 
-      var size = content.length - cache[file];
-      console.log(
-        file.blue,
-        '=>',
-        remoteFile.green,
-        (content.length / 1024).toFixed(1) + 'kB',
-        size !== 0 ? ('(' + (size > 0 ? '+'.green : '-'.red) + Math.abs(size) + ')') : ''
-      );
-
-      cache[file] = content;
+      cache[file] = content;
+      success(file, remoteFile, content.length, diff);
 
       if (callback)
         callback();
-    }.bind(null, file));
+    });
   }
 
   function watch(event, file) {
@@ -159,42 +186,38 @@
   }
 
   function authenticate(callback) {
-    require('child_process')
-      .exec(
-        'echo -e "y\n" | ssh-keygen -q -N "" -f ~/.ssh/sshync',
-        function() {
-          console.log(
-            'transferring public key to',
-            '~/.ssh/authorized_keys'.green +
-            ', please enter ' + 'remote'.bold + ' password:'
-          );
+    if (fs.existsSync(privateKeyPath)) {
+      options.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+      return callback();
+    }
 
-          put('add', privateKeyPath + '.pub', '~/.ssh/authorized_keys', callback);
-        }
-      );
+    console.log('generating keys to', '~/.ssh/sshync'.blue + ',', '~/.ssh/sshync.pub'.blue);
+    exec(
+      'echo -e "y\n" | ssh-keygen -q -N "" -f ~/.ssh/sshync',
+      function() {
+        console.log('transferring public key to','~/.ssh/authorized_keys'.green);
+        options.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+        put('add', privateKeyPath + '.pub', '~/.ssh/authorized_keys', callback);
+      }
+    );
   }
 
   function connect() {
-    var options = {
-      host: host,
-      port: port,
-      username: user,
-      privateKey: fs.readFileSync(privateKeyPath)
-    };
+    options.host = host;
+    options.port = port;
+    options.user = user;
+
+    if (!options.privateKey) {
+      var question = 'would you like to use key-based authentication? [yes/no] ';
+      if (rl.question(question) === 'yes')
+        return authenticate(connect);
+
+      question = 'root@178.62.82.203\'s password: ';
+      options.password = rl.question(question, { hideEchoBack: true });
+    }
 
     ssh = require('./ssh.js')(options, function(error) {
       if (error) {
-        if (error.level === 'client-authentication') {
-          if (fs.existsSync(privateKeyPath)) {
-            console.log('[' + '!'.red + ']', 'authentication failed, removing generated keys...');
-            console.log('[' + '!'.red + ']', 'try again!');
-            fs.unlinkSync(privateKeyPath);
-            fs.unlinkSync(privateKeyPath + '.pub');
-          }
-
-          return;
-        }
-
         throw error;
       }
 
@@ -227,8 +250,5 @@
     });
   }
 
-  if (!fs.existsSync(privateKeyPath))
-    authenticate(connect);
-  else
-    connect();
+  connect();
 }());

@@ -11,12 +11,9 @@
     self.options = options || {};
     self.options.host = options.host || 'localhost';
     self.options.port = options.port || 22;
-
-    if (!options.username || !options.privateKey)
-      return callback(new Error('Missing user or privateKey.'));
-
     self.options.username = options.username;
     self.options.privateKey = options.privateKey;
+    self.options.password = options.password;
 
     self.client = require('ssh2').Client;
     self.connection = new self.client();
