@@ -1,6 +1,10 @@
 # sshync
 
-Auto-sync files or directories over SSH using [fs.**watch**()](https://nodejs.org/docs/latest/api/fs.html#fs_fs_watch_filename_options_listener). Generates SSH private/public keys with ```ssh-keygen``` and transfers the public one to ```~/.ssh/authorized_keys``` on remote host, to avoid having to re-type password all the time.
+Auto-sync files or directories over SSH using [fs.**watch**()](https://nodejs.org/docs/latest/api/fs.html#fs_fs_watch_filename_options_listener).
+
+```would you like to use key-based authentication? [yes/no]```
+* **yes** – if they do not already exist, SSH private/public keys will be generated with ```ssh-keygen``` to ```~/.ssh/sshync``` and the public one moved to ```~/.ssh/authorized_keys``` on remote host (assumes you have access). Files will be transferred asynchronously.
+* **no** – files will be transferred synchronously and you will have to enter password every time a file changes.
 
 Utilizes simple caching to avoid unnecessary file transfers and to continuously show size difference.
 
@@ -28,9 +32,10 @@ First time run output:
 
 ```bash
 $ sshync root@xxx.xxx.82.203 sshync.js /root/sshync/sshync.js
-transferring public key to ~/.ssh/authorized_keys, please enter remote password:
+would you like to use key-based authentication? [yes/no] yes
+transferring public key to ~/.ssh/authorized_keys
 root@xxx.xxx.82.203's password:
-/Users/username/.ssh/sshync.pub => ~/.ssh/authorized_keys 0.4kB (+406)
+/Users/xxx/.ssh/sshync.pub => ~/.ssh/authorized_keys 0.4kB (+406)
 connected to root@xxx.xxx.82.203
 syncing sshync.js to /root/sshync/sshync.js
 sshync.js => /root/sshync/sshync.js 6.2kB (+6327)
@@ -43,6 +48,7 @@ Second time run output (no password needed):
 
 ```bash
 $ sshync root@xxx.xxx.82.203 sshync.js /root/sshync/sshync.js
+would you like to use key-based authentication? [yes/no] yes
 connected to root@xxx.xxx.82.203
 syncing sshync.js to /root/sshync/sshync.js
 sshync.js => /root/sshync/sshync.js 6.2kB (+6327)
