@@ -8,13 +8,13 @@
       rl = require('readline-sync'),
       exec = require('child_process').exec,
       execSync = require('child_process').execSync,
+      ScpClient = require('scp2').Client,
       path = require('path'),
       info = process.argv[2],
       source = process.argv[3],
       destination = process.argv[4],
       options = {},
-      cache = {},
-      ssh;
+      cache = {};
 
   if (!info || !source || !destination || info.indexOf('@') === -1) {
     var pkg = require('./package');
@@ -128,31 +128,47 @@
 
     // synchronous file transfer if password-based authentication
     if (!options.privateKey) {
-      if (execSync(command).length) {
-        cache[file] = '';
-        return fail(command);
-      } else {
-        cache[file] = content;
-        return success(file, remoteFile, content.length, diff);
-      }
+
+        var client = new ScpClient({
+            port: 22
+        });
+
+        client.defaults({
+            port: port,
+            host: host,
+            username: user,
+            password: options.password
+        });
+
+        client.upload(file, remoteFile, function(err) {
+            if (err) {
+                cache[file] = '';
+                console.log(err);
+                return fail(command);
+            } else {
+                cache[file] = content;
+                return success(file, remoteFile, content.length, diff);
+            }
+        });
+
+    } else {
+        // asynchronous file transfer
+        exec(command, function(error) {
+          if (error) {
+            cache[file] = '';
+            if (callback)
+              callback();
+
+            return fail(command);
+          }
+
+          cache[file] = content;
+          success(file, remoteFile, content.length, diff);
+
+          if (callback)
+            callback();
+        });
     }
-
-    // asynchronous file transfer
-    exec(command, function(error) {
-      if (error) {
-        cache[file] = '';
-        if (callback)
-          callback();
-
-        return fail(command);
-      }
-
-      cache[file] = content;
-      success(file, remoteFile, content.length, diff);
-
-      if (callback)
-        callback();
-    });
   }
 
   function watch(event, file) {
@@ -212,7 +228,8 @@
       if (rl.question(question) === 'yes')
         return authenticate(connect);
 
-      question = 'root@178.62.82.203\'s password: ';
+
+      question = user + '@' + host + '\'s password: ';
       options.password = rl.question(question, { hideEchoBack: true });
     }
 

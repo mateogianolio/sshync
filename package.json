@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "readline-sync": "^1.2.21",
+    "scp2": "^0.2.2",
     "ssh2": "^0.4.11",
     "terminal-colors": "^0.1.4"
   },
