@@ -225,11 +225,11 @@
 
     if (!options.privateKey) {
       var question = 'would you like to use key-based authentication? [yes/no] ';
-      if (rl.question(question) === 'yes') {
+      if (rl.question(question) === 'yes')
         return authenticate(connect);
-      }
 
-      question = 'root@178.62.82.203\'s password: ';
+
+      question = user + '@' + host + '\'s password: ';
       options.password = rl.question(question, { hideEchoBack: true });
     }
 
