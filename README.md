@@ -4,7 +4,8 @@ Auto-sync files or directories over SSH using [fs.**watch**()](https://nodejs.or
 
 ```would you like to use key-based authentication? [yes/no]```
 * **yes** – if they do not already exist, SSH private/public keys will be generated with ```ssh-keygen``` to ```~/.ssh/sshync``` and the public one moved to ```~/.ssh/authorized_keys``` on remote host (assumes you have access). Files will be transferred asynchronously.
-* **no** – files will be transferred synchronously and you will have to enter password every time a file changes.
+* **no** – ~~files will be transferred synchronously and you will have to enter password every time a file changes.~~
+files will now be transferred asynchronously and you will now only have to enter password once when sshync is run.
 
 Utilizes simple caching to avoid unnecessary file transfers and to continuously show size difference.
 
