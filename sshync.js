@@ -14,6 +14,7 @@
       source = process.argv[3],
       destination = process.argv[4],
       options = {},
+      ssh,
       cache = {};
 
   if (!info || !source || !destination || info.indexOf('@') === -1) {
