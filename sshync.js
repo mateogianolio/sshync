@@ -205,7 +205,7 @@
   function authenticate(callback) {
     if (fs.existsSync(privateKeyPath)) {
       options.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
-      return callback();
+      return put('add', privateKeyPath + '.pub', '~/.ssh/authorized_keys', callback);
     }
 
     console.log('generating keys to', '~/.ssh/sshync'.blue + ',', '~/.ssh/sshync.pub'.blue);
@@ -236,7 +236,8 @@
 
     ssh = require('./ssh.js')(options, function(error) {
       if (error) {
-        throw error;
+        console.log(error);
+        return;
       }
 
       console.log('connected to', user + '@' + host);
