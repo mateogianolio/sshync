@@ -7,7 +7,8 @@
       rsync = require('rsync'),
       path = require('path'),
       chalk = require('chalk'),
-      args = process.argv.slice(2);
+      args = process.argv.slice(2),
+      edit = false;
 
   if (args.length !== 2)
     return console.log(
@@ -20,6 +21,7 @@
   var source = path.resolve(args[0]),
       cmd = new rsync()
         .flags('avuz')
+        .set('exclude-from', path.relative(source,'.sshyncignore'))
         .source(source)
         .destination(args[1]),
       handle;
@@ -46,15 +48,15 @@
       contains(line, 'received') &&
       contains(line, 'bytes/sec') ?
         chalk.blue(line) :
-        chalk.green('✓ ') + line
+        (edit ? chalk.yellow('✎ ') : chalk.green('✓ ')) + line
     );
   }
 
   function sync() {
     handle = cmd.execute(
       (error, code, cmd) =>
-        console.log(error ? chalk.red(error) : ''),
-      (data) =>
+        error ? console.log(chalk.red(error)) : 0,
+      (data) => {
         data
           .toString()
           .split('\n')
@@ -63,10 +65,17 @@
               line &&
               contains(line, '/')
           )
-          .forEach(print)
+          .forEach(print);
+      }
     );
   }
 
   sync();
-  fs.watch(source, sync);
+  fs.watch(
+    source,
+    () => {
+      edit = true;
+      sync();
+    }
+  );
 }());
