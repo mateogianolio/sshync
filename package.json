@@ -1,16 +1,13 @@
 {
   "name": "sshync",
-  "version": "0.3.4",
+  "version": "1.0.0",
   "description": "Auto-sync files or directories over SSH",
-  "main": "sshync.js",
   "bin": {
     "sshync": "sshync.js"
   },
   "dependencies": {
-    "readline-sync": "^1.2.21",
-    "scp2": "^0.2.2",
-    "ssh2": "^0.4.11",
-    "terminal-colors": "^0.1.4"
+    "chalk": "^1.1.1",
+    "rsync": "^0.4.0"
   },
   "devDependencies": {},
   "scripts": {
@@ -31,7 +28,8 @@
     "auto-sync",
     "upload",
     "file upload",
-    "file watch"
+    "file watch",
+    "rsync"
   ],
   "author": "Mateo Gianolio",
   "license": "MIT"
