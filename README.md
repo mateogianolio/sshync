@@ -2,6 +2,8 @@
 
 Auto-sync files or directories over SSH using [**rsync**](https://github.com/mattijs/node-rsync) and [fs.**watch**()](https://nodejs.org/docs/latest/api/fs.html#fs_fs_watch_filename_options_listener).
 
+![Animated usage GIF](example.gif)
+
 Exclude files or directories by creating `.sshyncignore` in your source root (see repo root for example).
 
 Default **rsync** options:
