@@ -14,17 +14,21 @@
     return console.log(
       'sshync <' + chalk.blue('source') + '> ' +
       '<user@ip[:port]:' + chalk.green('destination') + '>\n' +
-      '\t' + chalk.blue('source') + ':\t\tlocal source file/folder' +
+      '\t' + chalk.blue('source') + ':\t\tlocal source file/folder\n' +
       '\t' + chalk.green('destination') + ':\tremote destination file/folder'
     );
 
   var source = path.resolve(args[0]),
+      exclude = path.relative(source, '.sshyncignore'),
       cmd = new rsync()
+        .shell('ssh')
         .flags('avuz')
-        .set('exclude-from', path.relative(source,'.sshyncignore'))
         .source(source)
         .destination(args[1]),
       handle;
+
+  if (fs.existsSync(exclude))
+    cmd.set('exclude-from', path.relative(source,'.sshyncignore'))
 
   // abort rsync on process exit
   function quit() {
@@ -54,16 +58,17 @@
 
   function sync() {
     handle = cmd.execute(
-      (error, code, cmd) =>
-        error ? console.log(chalk.red(error)) : 0,
-      (data) => {
-        data
+      function (error, code, cmd) {
+        return error ? console.log(chalk.red(error)) : 0;
+      },
+      function (data) {
+        return data
           .toString()
           .split('\n')
           .filter(
-            line =>
-              line &&
-              contains(line, '/')
+            function (line) {
+              return line && contains(line, '/');
+            }
           )
           .forEach(print);
       }
@@ -73,7 +78,7 @@
   sync();
   fs.watch(
     source,
-    () => {
+    function () {
       edit = true;
       sync();
     }
