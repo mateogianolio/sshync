@@ -78,6 +78,7 @@
   sync();
   fs.watch(
     source,
+    { recursive: true },
     function () {
       edit = true;
       sync();
