@@ -19,7 +19,7 @@
     );
 
   var source = path.resolve(args[0]),
-      exclude = path.relative(source, '.sshyncignore'),
+      exclude = path.resolve(source, '.sshyncignore'),
       cmd = new rsync()
         .shell('ssh')
         .flags('avuz')
@@ -28,7 +28,7 @@
       handle;
 
   if (fs.existsSync(exclude))
-    cmd.set('exclude-from', path.relative(source,'.sshyncignore'))
+    cmd.set('exclude-from', exclude)
 
   // abort rsync on process exit
   function quit() {
