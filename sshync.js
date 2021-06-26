@@ -23,6 +23,7 @@
       cmd = new rsync()
         .shell('ssh')
         .flags('avuz')
+        .delete() // This tells rsync to delete extraneous files from the receiving side
         .source(source)
         .destination(args[1]),
       handle;
